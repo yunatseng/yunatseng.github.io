@@ -1,0 +1,106 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="突然收到一個串接 YouTube 影音的需求，把整個過程和一些中途遇過的問題紀錄一下。"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>YouTube 影音串接紀錄 | Yuna Tseng</title><link rel="Shortcut Icon" type="image/x-icon" href="../../../../favicon.ico"><meta name="generator" content="Hexo 5.0.2"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="../../../../index.html">Home</a><a class="sidebar-nav-item" href="../../../../archives">Archives</a></nav><div class="container post-meta"><div class="post-tags"><a class="post-tag-none-link" href="../../../../tags/YouTube/" rel="tag">YouTube</a><a class="post-tag-none-link" href="../../../../tags/duration/" rel="tag">duration</a></div><div class="post-time">2020-10-20</div></div></div><div class="container post-header"><h1>YouTube 影音串接紀錄</h1></div><div class="container post-toc"><details class="toc"><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#YouTube-%E9%87%91%E9%91%B0"><span class="toc-number">1.</span> <span class="toc-text">YouTube 金鑰</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-Part-%E5%8F%83%E6%95%B8"><span class="toc-number">2.</span> <span class="toc-text">使用 Part 參數</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BD%B1%E7%89%87%E9%95%B7%E5%BA%A6%E8%A7%A3%E6%9E%90"><span class="toc-number">3.</span> <span class="toc-text">影片長度解析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BD%B1%E7%89%87%E5%88%97%E8%A1%A8%E5%88%86%E9%A0%81%E5%AF%A6%E4%BD%9C"><span class="toc-number">4.</span> <span class="toc-text">影片列表分頁實作</span></a></li></ol></details></div><div class="container post-content"><p>突然收到一個串接 YouTube 影音的需求，把整個過程和一些中途遇過的問題紀錄一下。</p>
+<h3 id="YouTube-金鑰"><a href="#YouTube-金鑰" class="headerlink" title="YouTube 金鑰"></a>YouTube 金鑰</h3><p>串接 YouTube API 是需要金鑰的，可以依照下列步驟申請金鑰：</p>
+<ol>
+<li>先至 Google Developers Console 建立要使用 YouTube API 的專案</li>
+</ol>
+<p><a target="_blank" rel="noopener" href="https://console.developers.google.com/">https://console.developers.google.com/</a></p>
+<p>建立完成後要啟用 YouTube API</p>
+<ol start="2">
+<li>申請金鑰</li>
+</ol>
+<p><a target="_blank" rel="noopener" href="https://console.developers.google.com/apis/dashboard">https://console.developers.google.com/apis/dashboard</a></p>
+<h3 id="使用-Part-參數"><a href="#使用-Part-參數" class="headerlink" title="使用 Part 參數"></a>使用 Part 參數</h3><p><code>part</code> 參數是檢索或返回資源的任何 API 請求的必需參數。例如 video api 的 part 參數包含以下部分：</p>
+<ul>
+<li>snippet</li>
+<li>contentDetails</li>
+<li>fileDetails</li>
+<li>player</li>
+<li>processingDetails</li>
+<li>recordingDetails</li>
+<li>statistics</li>
+<li>status</li>
+<li>suggestions</li>
+<li>topicDetails</li>
+</ul>
+<p>大部分的影片資訊例如：影片標題、影片敘述，可以由 part = <code>snippet</code> 拿回，但影片長度則在 part = <code>contentDetails</code> 裡面。</p>
+<p>call 法範例：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> API_BASE_URL = <span class="string">&quot;https://www.googleapis.com/youtube/v3/videos&quot;</span>;</span><br><span class="line"><span class="keyword">const</span> query = <span class="string">&#x27;part=snippet&amp;part=contentDetails&amp;chart=mostPopular(最受歡迎影片)&amp;maxResults=50(一次返回50個items)&amp;regionCode=TW(區域為台灣)&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> res = <span class="keyword">await</span> fetch(<span class="string">`<span class="subst">$&#123;API_BASE_URL&#125;</span>?<span class="subst">$&#123;query&#125;</span>&amp;key=<span class="subst">$&#123;申請的金鑰&#125;</span>`</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="影片長度解析"><a href="#影片長度解析" class="headerlink" title="影片長度解析"></a>影片長度解析</h3><p>YouTube 的 影片長度 返回 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/ISO_8601#Durations">ISO_8601</a>格式的持續時間。持續時間以<code>PT</code>（代表時間）為前綴。</p>
+<p>範例：</p>
+<ul>
+<li>20 秒 =&gt; PT 20S</li>
+<li>5 分 31 秒 =&gt; PT 5M31S</li>
+<li>2 小時 =&gt; PT 2H</li>
+<li>4 小時 12 分鐘 30 秒 =&gt; PT 4H12M30S</li>
+</ul>
+<p>由上可得知，拿回來的時間格式是需要自己手動去解析的，可以利用套件例如：<a target="_blank" rel="noopener" href="https://www.npmjs.com/package/youtube-duration-format">youtube-duration-format</a> 做掉或者是自行手動解析。</p>
+<h3 id="影片列表分頁實作"><a href="#影片列表分頁實作" class="headerlink" title="影片列表分頁實作"></a>影片列表分頁實作</h3><p>影片分頁的實作需要用到<code>nextPageToken</code>這個回傳的屬性。基本的 API 回傳樣式如下（注意每個分頁最多只能回傳 50 個影片）：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line"><span class="string">&quot;kind&quot;</span>: <span class="string">&quot;youtube#playlistListResponse&quot;</span>,</span><br><span class="line"><span class="string">&quot;etag&quot;</span>: <span class="string">&quot;\&quot;XpPGQXPLgenD_n8JR4Qk/05DoUs3OS-AxnDI1FJbdM\&quot;&quot;</span>,</span><br><span class="line"><span class="string">&quot;nextPageToken&quot;</span>: <span class="string">&quot;CDIQAA&quot;</span>,  <span class="comment">// =&gt; 就是這個</span></span><br><span class="line"><span class="string">&quot;pageInfo&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;totalResults&quot;</span>: <span class="number">283</span>,</span><br><span class="line">    <span class="string">&quot;resultsPerPage&quot;</span>: <span class="number">50</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到這個屬性應該可以想像到，如果我們要 call 下一個分頁的資料，就會需要用到這個<code>nextPageToken</code>。call 法如下所示：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> API_BASE_URL = <span class="string">&quot;https://www.googleapis.com/youtube/v3/videos&quot;</span>;</span><br><span class="line">fetch(<span class="string">`<span class="subst">$&#123;API_BASE_URL&#125;</span>?<span class="subst">$&#123;query&#125;</span>&amp;key=<span class="subst">$&#123;申請的金鑰&#125;</span>&amp;pageToken=<span class="subst">$&#123;拿到的nextPageToken&#125;</span>`</span>)</span><br></pre></td></tr></table></figure>
+
+<p>但對前端來說，這樣的 Cursor-based pagination API 會有一個問題，那就是如果分頁的給定樣式是要可以指定頁數的呢？例如：我要直接跳到第五頁，但我又只拿得到 nextPageToken ，該怎麼辦？</p>
+<p>查了一下 stackoverflow 發現解法還蠻多元的，舉幾個解法如下：</p>
+<ol>
+<li>有網友直接把所有 nextPageToken hack 出來成一張列表：</li>
+</ol>
+<p>PageToken 列表網址：</p>
+<ul>
+<li>first 1000 items: <a target="_blank" rel="noopener" href="https://github.com/Quihico/handy.stuff/blob/master/yt.pagetokens.00000-00999">https://github.com/Quihico/handy.stuff/blob/master/yt.pagetokens.00000-00999</a></li>
+<li>Pagetokens for every 10th item in range(1, 100000)：<a target="_blank" rel="noopener" href="https://github.com/Quihico/handy.stuff/blob/master/yt.pagetokens.x10">https://github.com/Quihico/handy.stuff/blob/master/yt.pagetokens.x10</a></li>
+<li>Pagetokens for every 50th item in range(1, 100000)：<a target="_blank" rel="noopener" href="https://github.com/Quihico/handy.stuff/blob/master/yt.pagetokens">https://github.com/Quihico/handy.stuff/blob/master/yt.pagetokens</a></li>
+</ul>
+<p>詳細內容參考：<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/30949556/youtube-data-api-v3-pagetoken-for-arbitrary-page">https://stackoverflow.com/questions/30949556/youtube-data-api-v3-pagetoken-for-arbitrary-page</a></p>
+<p>但這個解法實在太 depends on server 回傳的格式了，如果那天 server 改了 token 程式碼又要改… 所以就不考慮這個解法。</p>
+<ol start="2">
+<li>最直觀的解法：call n 次 API 拿到 n+1 頁的 pageToken：</li>
+</ol>
+<p>也就是，假如我要拿到第五頁的內容，那我就先連續打四次 API，好拿到第五頁的 PageToken。<br>但這個做法實在是有點耗前端效能，假如我要拿到第十頁，我要先 call API 九次？並且 call 了九次只為了拿到第十頁的 pageToken，實在是有點浪費～所以這個做法也先不考慮。</p>
+<ol>
+<li>先一口氣把所有需要的資料拿回來，再由前端切 chunk 提供各分頁內容</li>
+</ol>
+<p>這個做法的好處是大大減少了 call API 的次數，要拿回一百個影片，只要 call 兩次就好了（因為一次最多只能拿 50 個 items）</p>
+<p>拿回來之後需自行把拿到的 Array 切 chunk 成每一頁所需要的數目，作法如下：</p>
+<ol>
+<li>用 lodash 函式庫</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_.chunk(array, [size=<span class="number">0</span>]) <span class="comment">// 將數組拆分成多個 size 長度的塊，並組成一個新數組</span></span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>手寫 chunk</li>
+</ol>
+<p>思路如下：</p>
+<blockquote>
+<ol>
+<li>假設今天有個 array = [1,2,3,4]，那切 chunkSize = 3 的結果 = [[1,2,3] , 4]</li>
+<li>要切幾次？(array.length/chunkSize) =&gt; 不對，要無條件進位，所以應該是 Math.ceil(array.length/chunkSize)</li>
+<li>假設 chunkSize = 3，那第一項應該是 array.slice(0,3).push(resultArray)。第二項應該是 array.slice(3,6).push(resultArray)。第三項後以此類推 push(6,9)…</li>
+</ol>
+</blockquote>
+<p>思路釐清後可以開始寫程式：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span>(<span class="params">array, chunkSize</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">const</span> resultArray = [];</span><br><span class="line">    <span class="keyword">const</span> length = <span class="built_in">Math</span>.ceil(array.length / chunkSize)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; length; i++)&#123;</span><br><span class="line">        resultArray.push(array.slice(chunkSize * i , chunkSize * (i + <span class="number">1</span>)));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> resultArray;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>寫完後 google 了一下是否有更好的寫法，發現有神人寫的更短寫法：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> chunk = <span class="function">(<span class="params">arr, size</span>) =&gt;</span></span><br><span class="line">  arr</span><br><span class="line">    .reduce(<span class="function">(<span class="params">acc, _, i</span>) =&gt;</span></span><br><span class="line">      (i % size)</span><br><span class="line">        ? acc</span><br><span class="line">        : [...acc, arr.slice(i, i + size)]</span><br><span class="line">    , [])</span><br></pre></td></tr></table></figure>
+
+<p>參考：<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/8495687/split-array-into-chunks">https://stackoverflow.com/questions/8495687/split-array-into-chunks</a></p>
+<p>最後我選擇了第三種做法，但依照經驗，這種 UI 處理通常還是前端會回傳 pageNum 給後端，去要該分頁資料比較多～ 因需要純前端的做法且 total 只要一百個影音故採取此做法。在一般的 production 上還是比較不建議的。</p>
+<p>補充：關於分頁的設計想法可參考：<a target="_blank" rel="noopener" href="https://uxdesign.cc/why-facebook-says-cursor-pagination-is-the-greatest-d6b98d86b6c0">Is offset pagination dead? Why cursor pagination is taking over</a></p>
+</div></div><div class="post-main post-comment"><div id="disqus_thread"></div><script type="text/javascript">
+var disqus_shortname = 'yunatsengblog';
+var disqus_identifier = '2020/10/20/Youtube-影音串接紀錄/';
+var disqus_title = 'YouTube 影音串接紀錄';
+var disqus_url = 'http://yoursite.com/2020/10/20/Youtube-%E5%BD%B1%E9%9F%B3%E4%B8%B2%E6%8E%A5%E7%B4%80%E9%8C%84/';
+(function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a target="_blank" rel="noopener" href="http://disqus.com" class="dsq-brlink">Blog comments powered by <span class="logo-disqus">Disqus</span></a></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>
